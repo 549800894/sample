@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 
 class UserController extends Controller
 {
@@ -59,8 +60,7 @@ class UserController extends Controller
             'email'=>$request->email,
             'password'=>bcrypt($request->password),
         ]);
-
-        Auth::login($user);
+        $this->sendEmailConfirmationTo($user);
         session()->flash('success', '欢迎，您将在这里开启一段新的旅程~');
         return redirect()->route('users.show',[$user]);
     }
@@ -104,4 +104,31 @@ class UserController extends Controller
         session()->flash('success','删除成功');
         return back();
     }
+
+    protected function sendEmailConfirmationTo($user)
+    {
+        $view = 'emails.confirm';
+        $data = compact('user');
+        $from = 'aufree@yousails.com';
+        $name = 'Aufree';
+        $to = $user->email;
+        $subject = "感谢注册 Sample 应用！请确认你的邮箱。";
+
+        Mail::send($view, $data, function ($message) use ($from, $name, $to, $subject) {
+            $message->from($from, $name)->to($to)->subject($subject);
+        });
+    }
+
+    public function confirmEmail($token)
+    {
+        $user = User::where('activation_token',$token)->firstOrFail();
+        $user->activated=true;
+        $user->activation_token=null;
+        $user->save();
+
+        Auth::Login();
+        session()->flash('success','恭喜您,激活成功');
+        return redirect()->route('users.show',[$user]);
+    }
+
 }
