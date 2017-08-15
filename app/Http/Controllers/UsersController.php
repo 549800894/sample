@@ -11,7 +11,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 
-class UserController extends Controller
+class UsersController extends Controller
 {
     public function __construct()
     {
@@ -44,7 +44,10 @@ class UserController extends Controller
     public function show($id)
     {
         $user = User::findOrfail($id);
-        return view('users.show',compact("user"));
+        $statuses=$user->statuses()
+                        ->orderBy('created_at','desc')
+                        ->paginate(30);
+        return view('users.show',compact("user",'statuses'));
     }
 
     public function store(Request $request)
